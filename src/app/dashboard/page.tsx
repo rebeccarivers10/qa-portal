@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Badge } from "@/components/ui/Badge";
 import { format } from "date-fns";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { AckBadges } from "@/components/AckBadges";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +108,7 @@ export default async function DashboardPage({
                 <th className="px-4 py-3">Region</th>
                 {(role === "SUBMITTER" || role === "ADMIN") && <th className="px-4 py-3">Hire Date</th>}
                 {role !== "REP" && <th className="px-4 py-3 text-center">Count</th>}
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Acknowledgments</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -153,9 +153,10 @@ export default async function DashboardPage({
                       </td>
                     )}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <Badge variant={l.status === "NEEDS_REVIEW" ? "needs_review" : "acknowledged"}>
-                        {l.status === "NEEDS_REVIEW" ? "Needs Review" : l.status === "MANAGER_ACKNOWLEDGED" ? "Mgr Acknowledged" : "Acknowledged"}
-                      </Badge>
+                      <AckBadges
+                        acknowledgedAt={l.acknowledgedAt}
+                        managerAcknowledgedAt={l.managerAcknowledgedAt}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/dashboard/liabilities/${l.id}`} className="text-blue-600 hover:underline text-xs font-medium">

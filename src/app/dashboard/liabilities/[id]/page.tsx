@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/Badge";
 import { LiabilityActions } from "./LiabilityActions";
+import { AckTimeline } from "@/components/AckTimeline";
 
 const REGION_LABELS: Record<string, string> = { EAST: "East", WEST: "West", CENTRAL: "Central" };
 
@@ -114,6 +115,15 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
           <p className="text-gray-900 mt-1 text-sm leading-relaxed whitespace-pre-wrap">{liability.notes}</p>
         </div>
       </div>
+
+      <AckTimeline
+        submitterName={liability.submitter.name ?? liability.submitter.email}
+        submittedAt={liability.createdAt}
+        repName={liability.rep.name ?? liability.rep.email}
+        acknowledgedAt={liability.acknowledgedAt}
+        managerName={liability.rep.manager?.name ?? null}
+        managerAcknowledgedAt={liability.managerAcknowledgedAt}
+      />
 
       {liability.comments.length > 0 && (
         <div className="space-y-3">
