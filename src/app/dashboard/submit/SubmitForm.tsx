@@ -108,9 +108,9 @@ export function SubmitForm() {
         {selectedRep && <p className="text-xs text-green-600">Selected: {selectedRep.name ?? selectedRep.email}</p>}
       </div>
 
-      {/* Customer Name */}
+      {/* Contact Name */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-gray-700">Customer Name *</label>
+        <label className="text-sm font-medium text-gray-700">Contact Name *</label>
         <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
           placeholder="e.g. Acme Corp"
           className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />

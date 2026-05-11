@@ -67,7 +67,7 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
             <p className="text-gray-900 mt-0.5">{liability.rep.manager?.name ?? "—"}</p>
           </div>
           <div>
-            <p className="text-gray-500 font-medium">Customer Name</p>
+            <p className="text-gray-500 font-medium">Contact Name</p>
             <p className="text-gray-900 mt-0.5">{liability.customerName}</p>
           </div>
           <div>

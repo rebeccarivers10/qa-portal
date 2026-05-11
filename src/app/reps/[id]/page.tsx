@@ -65,7 +65,7 @@ export default async function RepHistoryPage({ params }: { params: Promise<{ id:
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Contact Name</th>
                   <th className="px-4 py-3">Call Date</th>
                   <th className="px-4 py-3">Call Length</th>
                   <th className="px-4 py-3">Reason</th>
