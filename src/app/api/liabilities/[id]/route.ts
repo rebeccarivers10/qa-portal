@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  notifyLiabilityAcknowledged,
-  notifyCommentAdded,
-} from "@/lib/notifications";
+import { notifyLiabilityAcknowledged, notifyCommentAdded } from "@/lib/notifications";
 
 export async function GET(
   _req: NextRequest,
@@ -17,12 +14,9 @@ export async function GET(
   const liability = await prisma.liability.findUnique({
     where: { id },
     include: {
-      rep: { select: { id: true, name: true, email: true, manager: { select: { id: true, name: true, email: true } } } },
+      rep: { select: { id: true, name: true, email: true, hireDate: true, manager: { select: { id: true, name: true, email: true } } } },
       submitter: { select: { id: true, name: true, email: true } },
-      comments: {
-        include: { author: { select: { id: true, name: true, role: true } } },
-        orderBy: { createdAt: "asc" },
-      },
+      comments: { include: { author: { select: { id: true, name: true, role: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -39,7 +33,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { action, commentBody, commentImageUrls } = body;
+  const { action, commentBody } = body;
 
   const liability = await prisma.liability.findUnique({ where: { id } });
   if (!liability) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -58,9 +52,28 @@ export async function PATCH(
     return NextResponse.json(updated);
   }
 
+  if (action === "manager_acknowledge") {
+    if (role !== "MANAGER" && role !== "ADMIN") {
+      return NextResponse.json({ error: "Only managers can do this" }, { status: 403 });
+    }
+    const updated = await prisma.liability.update({
+      where: { id },
+      data: { managerAcknowledgedAt: new Date() },
+    });
+    // Notify submitter
+    await prisma.notification.create({
+      data: {
+        userId: liability.submitterId,
+        liabilityId: id,
+        message: `A manager has reviewed and acknowledged a QA liability.`,
+      },
+    });
+    return NextResponse.json(updated);
+  }
+
   if (action === "comment") {
+    // Only managers and submitters can leave notes
     const allowedTypes: Record<string, string> = {
-      REP: "REVIEWEE",
       MANAGER: "MANAGER",
       SUBMITTER: "SUBMITTER",
       ADMIN: "SUBMITTER",
@@ -68,17 +81,13 @@ export async function PATCH(
     const commentType = allowedTypes[role];
     if (!commentType) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    if (role === "REP" && session.user.id !== liability.repId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const comment = await prisma.liabilityComment.create({
       data: {
         liabilityId: id,
         authorId: session.user.id,
-        type: commentType as "REVIEWEE" | "MANAGER" | "SUBMITTER",
+        type: commentType as "MANAGER" | "SUBMITTER",
         body: commentBody,
-        imageUrls: commentImageUrls ?? [],
+        imageUrls: [],
       },
       include: { author: { select: { id: true, name: true, role: true } } },
     });

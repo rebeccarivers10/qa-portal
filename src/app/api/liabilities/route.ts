@@ -9,10 +9,12 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const repId = searchParams.get("repId");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   const role = session.user.role as string;
-
   let where: Record<string, unknown> = {};
+
   if (role === "REP") {
     where = { repId: session.user.id };
   } else if (role === "MANAGER") {
@@ -25,10 +27,20 @@ export async function GET(req: NextRequest) {
     where = { repId };
   }
 
+  if (from || to) {
+    where = {
+      ...where,
+      callDate: {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to ? { lte: new Date(to) } : {}),
+      },
+    };
+  }
+
   const liabilities = await prisma.liability.findMany({
     where,
     include: {
-      rep: { select: { id: true, name: true, email: true } },
+      rep: { select: { id: true, name: true, email: true, manager: { select: { id: true, name: true } } } },
       submitter: { select: { id: true, name: true, email: true } },
       comments: { include: { author: { select: { id: true, name: true, role: true } } }, orderBy: { createdAt: "asc" } },
     },
@@ -48,9 +60,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { repId, contactDate, notes, imageUrls } = body;
+  const { repId, customerName, callDate, callLength, callLink, liabilityReason, notes, region, imageUrls } = body;
 
-  if (!repId || !contactDate || !notes) {
+  if (!repId || !customerName || !callDate || !callLength || !liabilityReason || !notes || !region) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -58,13 +70,17 @@ export async function POST(req: NextRequest) {
     data: {
       repId,
       submitterId: session.user.id,
-      contactDate: new Date(contactDate),
+      customerName,
+      callDate: new Date(callDate),
+      callLength,
+      callLink: callLink || null,
+      liabilityReason,
       notes,
+      region,
       imageUrls: imageUrls ?? [],
     },
   });
 
   await notifyLiabilitySubmitted(liability.id);
-
   return NextResponse.json(liability, { status: 201 });
 }

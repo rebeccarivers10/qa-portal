@@ -14,8 +14,15 @@ enum Role {
 }
 
 enum LiabilityStatus {
-  PENDING
+  NEEDS_REVIEW
   ACKNOWLEDGED
+  MANAGER_ACKNOWLEDGED
+}
+
+enum Region {
+  EAST
+  WEST
+  CENTRAL
 }
 
 model User {
@@ -25,6 +32,7 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role      @default(REP)
+  hireDate      DateTime?
 
   managerId String?
   manager   User?   @relation("ManagerReps", fields: [managerId], references: [id])
@@ -32,8 +40,8 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
-  liabilities   Liability[]      @relation("RepLiabilities")
-  submitted     Liability[]      @relation("SubmitterLiabilities")
+  liabilities   Liability[]        @relation("RepLiabilities")
+  submitted     Liability[]        @relation("SubmitterLiabilities")
   comments      LiabilityComment[]
   notifications Notification[]
 
@@ -77,14 +85,20 @@ model VerificationToken {
 }
 
 model Liability {
-  id             String          @id @default(cuid())
-  repId          String
-  submitterId    String
-  contactDate    DateTime
-  notes          String
-  imageUrls      String[]        @default([])
-  status         LiabilityStatus @default(PENDING)
-  acknowledgedAt DateTime?
+  id                    String          @id @default(cuid())
+  repId                 String
+  submitterId           String
+  customerName          String
+  callDate              DateTime
+  callLength            String
+  callLink              String?
+  liabilityReason       String
+  notes                 String
+  region                Region
+  imageUrls             String[]        @default([])
+  status                LiabilityStatus @default(NEEDS_REVIEW)
+  acknowledgedAt        DateTime?
+  managerAcknowledgedAt DateTime?
 
   rep       User @relation("RepLiabilities", fields: [repId], references: [id])
   submitter User @relation("SubmitterLiabilities", fields: [submitterId], references: [id])
@@ -97,7 +111,6 @@ model Liability {
 }
 
 enum CommentType {
-  REVIEWEE
   MANAGER
   SUBMITTER
 }

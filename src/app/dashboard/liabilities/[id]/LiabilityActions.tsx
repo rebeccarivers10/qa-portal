@@ -7,18 +7,21 @@ import { Button } from "@/components/ui/Button";
 interface Props {
   liabilityId: string;
   status: string;
+  managerAcknowledgedAt: string | null;
   isRep: boolean;
   isManager: boolean;
   isSubmitter: boolean;
 }
 
-export function LiabilityActions({ liabilityId, status, isRep, isManager, isSubmitter }: Props) {
+export function LiabilityActions({ liabilityId, status, managerAcknowledgedAt, isRep, isManager, isSubmitter }: Props) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const canComment = isRep || isManager || isSubmitter;
-  const canAcknowledge = isRep && status === "PENDING";
+  const canAcknowledge = isRep && status === "NEEDS_REVIEW";
+  const canManagerAcknowledge = isManager && !managerAcknowledgedAt;
+  // Reps can no longer leave notes — only managers and submitters
+  const canComment = isManager || isSubmitter;
 
   async function acknowledge() {
     setLoading(true);
@@ -31,26 +34,43 @@ export function LiabilityActions({ liabilityId, status, isRep, isManager, isSubm
     setLoading(false);
   }
 
+  async function managerAcknowledge() {
+    setLoading(true);
+    await fetch(`/api/liabilities/${liabilityId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "manager_acknowledge" }),
+    });
+    router.refresh();
+    setLoading(false);
+  }
+
   async function submitComment() {
     if (!body.trim()) return;
     setLoading(true);
     await fetch(`/api/liabilities/${liabilityId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "comment", commentBody: body, commentImageUrls: [] }),
+      body: JSON.stringify({ action: "comment", commentBody: body }),
     });
     setBody("");
     router.refresh();
     setLoading(false);
   }
 
-  if (!canAcknowledge && !canComment) return null;
+  if (!canAcknowledge && !canManagerAcknowledge && !canComment) return null;
 
   return (
     <div className="space-y-4">
       {canAcknowledge && (
         <Button onClick={acknowledge} disabled={loading} size="lg">
           Acknowledge Liability
+        </Button>
+      )}
+
+      {canManagerAcknowledge && (
+        <Button onClick={managerAcknowledge} disabled={loading} size="lg" variant="secondary">
+          Mark as Reviewed (Manager Acknowledge)
         </Button>
       )}
 
