@@ -59,7 +59,7 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-500 font-medium">Sales Rep</p>
+            <p className="text-gray-500 font-medium">User</p>
             <p className="text-gray-900 mt-0.5">{liability.rep.name ?? liability.rep.email}</p>
           </div>
           <div>
@@ -97,7 +97,7 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
           )}
           {liability.acknowledgedAt && (
             <div>
-              <p className="text-gray-500 font-medium">Rep Acknowledged</p>
+              <p className="text-gray-500 font-medium">User Acknowledged</p>
               <p className="text-gray-900 mt-0.5">{format(new Date(liability.acknowledgedAt), "MMM d, yyyy h:mm a")}</p>
             </div>
           )}

@@ -15,7 +15,7 @@ interface User {
 const roleLabels: Record<string, string> = {
   SUBMITTER: "QA Submitter",
   MANAGER: "Manager",
-  REP: "Sales Rep",
+  REP: "User",
   ADMIN: "Admin",
 };
 

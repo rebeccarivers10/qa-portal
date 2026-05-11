@@ -80,9 +80,9 @@ export function SubmitForm() {
     <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-5">
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3">{error}</div>}
 
-      {/* Rep Selector */}
+      {/* User Selector */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-gray-700">Sales Rep *</label>
+        <label className="text-sm font-medium text-gray-700">User *</label>
         <div className="relative">
           <input type="text" value={repSearch}
             onChange={(e) => { setRepSearch(e.target.value); setRepId(""); setShowDropdown(true); }}

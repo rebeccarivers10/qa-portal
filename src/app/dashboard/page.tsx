@@ -99,7 +99,7 @@ export default async function DashboardPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                {role !== "REP" && <th className="px-4 py-3">Rep</th>}
+                {role !== "REP" && <th className="px-4 py-3">User</th>}
                 {role !== "REP" && <th className="px-4 py-3">Manager</th>}
                 <th className="px-4 py-3">Contact Name</th>
                 <th className="px-4 py-3">Call Date</th>
