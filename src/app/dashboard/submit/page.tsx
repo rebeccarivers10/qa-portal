@@ -11,9 +11,9 @@ export default async function SubmitPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Submit Liability</h1>
+        <h1 className="text-2xl font-black uppercase tracking-tight" style={{ color: "var(--lp-navy)" }}>Submit Liability</h1>
         <p className="text-sm text-gray-500 mt-1">
-          The rep and their manager will be notified by email and in-app.
+          The user and their manager will be notified in-app.
         </p>
       </div>
       <SubmitForm />

@@ -68,37 +68,40 @@ export default async function DashboardPage({
           <p className="text-sm text-gray-500 mt-1">Welcome back, {session.user.name ?? session.user.email}</p>
         </div>
         {(role === "SUBMITTER" || role === "ADMIN") && (
-          <Link href="/dashboard/submit" className="text-sm bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+          <Link href="/dashboard/submit"
+            className="text-xs font-bold uppercase tracking-wide text-white px-5 py-2.5 rounded transition-colors"
+            style={{ backgroundColor: "var(--lp-blue)" }}
+          >
             + Submit Liability
           </Link>
         )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Total</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{liabilities.length}</p>
+        <div className="bg-white rounded-lg border-t-4 border-gray-200 p-5 shadow-sm" style={{ borderTopColor: "var(--lp-navy)" }}>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Total</p>
+          <p className="text-3xl font-black mt-1" style={{ color: "var(--lp-navy)" }}>{liabilities.length}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Needs Review</p>
-          <p className="text-3xl font-bold text-yellow-600 mt-1">{needsReview}</p>
+        <div className="bg-white rounded-lg border-t-4 border-gray-200 p-5 shadow-sm border-t-yellow-400">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Needs Review</p>
+          <p className="text-3xl font-black text-yellow-500 mt-1">{needsReview}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Acknowledged</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{acknowledged}</p>
+        <div className="bg-white rounded-lg border-t-4 border-gray-200 p-5 shadow-sm border-t-green-500">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Acknowledged</p>
+          <p className="text-3xl font-black text-green-600 mt-1">{acknowledged}</p>
         </div>
       </div>
 
       {showDateFilter && <DateRangeFilter />}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-        <div className="px-6 py-4 border-b border-gray-100 font-semibold text-gray-800">Liabilities</div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100 font-bold uppercase tracking-wide text-sm" style={{ color: "var(--lp-navy)" }}>Liabilities</div>
         {liabilities.length === 0 ? (
           <p className="px-6 py-10 text-sm text-gray-400 text-center">No liabilities found.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <tr className="text-left text-[10px] font-bold text-white uppercase tracking-widest" style={{ backgroundColor: "var(--lp-navy)" }}>
                 {role !== "REP" && <th className="px-4 py-3">User</th>}
                 {role !== "REP" && <th className="px-4 py-3">Manager</th>}
                 <th className="px-4 py-3">Contact Name</th>

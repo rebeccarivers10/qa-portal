@@ -10,36 +10,42 @@ export async function Navbar() {
   const role = session.user.role as string;
 
   return (
-    <nav className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40">
-      <div className="flex items-center gap-6">
-        <Link href="/dashboard" className="font-bold text-blue-700 text-lg tracking-tight">
-          QA Portal
+    <nav className="h-14 flex items-center justify-between px-6 sticky top-0 z-40" style={{ backgroundColor: "var(--lp-navy)" }}>
+      <div className="flex items-center gap-8">
+        {/* Logo */}
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded flex items-center justify-center font-black text-xs" style={{ backgroundColor: "var(--lp-blue)", color: "white" }}>
+            LP
+          </div>
+          <span className="font-bold text-white text-sm tracking-widest uppercase">QA Portal</span>
         </Link>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
+
+        {/* Nav links */}
+        <div className="flex items-center gap-5 text-sm">
+          <Link href="/dashboard" className="text-blue-200 hover:text-white transition-colors font-medium">
             Dashboard
           </Link>
           {(role === "SUBMITTER" || role === "ADMIN") && (
-            <Link href="/dashboard/submit" className="hover:text-blue-600 transition-colors">
+            <Link href="/dashboard/submit" className="text-blue-200 hover:text-white transition-colors font-medium">
               Submit Liability
             </Link>
           )}
           {(role === "SUBMITTER" || role === "ADMIN") && (
-            <Link href="/dashboard/import" className="hover:text-blue-600 transition-colors">
+            <Link href="/dashboard/import" className="text-blue-200 hover:text-white transition-colors font-medium">
               Import CSV
             </Link>
           )}
           {role === "ADMIN" && (
-            <Link href="/dashboard/admin" className="hover:text-blue-600 transition-colors">
+            <Link href="/dashboard/admin" className="text-blue-200 hover:text-white transition-colors font-medium">
               Admin
             </Link>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <NotificationBell />
-        <span className="text-sm text-gray-500">{session.user.name ?? session.user.email}</span>
+        <span className="text-blue-200 text-sm">{session.user.name ?? session.user.email}</span>
         <SignOutButton />
       </div>
     </nav>
