@@ -106,7 +106,7 @@ export default async function DashboardPage({
                 {role !== "REP" && <th className="px-4 py-3">Manager</th>}
                 <th className="px-4 py-3">Contact Name</th>
                 <th className="px-4 py-3">Call Date</th>
-                <th className="px-4 py-3">Call Length</th>
+
                 <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">Region</th>
                 {(role === "SUBMITTER" || role === "ADMIN") && <th className="px-4 py-3">Hire Date</th>}
@@ -136,7 +136,7 @@ export default async function DashboardPage({
                     )}
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{l.customerName}</td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{format(new Date(l.callDate), "MM-dd-yyyy")}</td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{l.callLength}</td>
+
                     <td className="px-4 py-3 text-gray-700 max-w-[180px]">
                       <p className="truncate" title={l.liabilityReason}>{l.liabilityReason}</p>
                     </td>
