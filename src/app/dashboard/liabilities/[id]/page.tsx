@@ -2,10 +2,17 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { LiabilityActions } from "./LiabilityActions";
 import { AckTimeline } from "@/components/AckTimeline";
+
+const ALL_LIABILITY_REASONS = [
+  "Sales- Third-Party Consent for Call Recordings Policy",
+  "User Locations",
+  "Other - See Notes",
+  "Ongoing Support",
+  "AM- Impatience with the Client (Extreme)",
+];
 
 const REGION_LABELS: Record<string, string> = { EAST: "East", WEST: "West", CENTRAL: "Central" };
 
@@ -37,21 +44,15 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
   const isManager = session.user.id === liability.rep.managerId;
   const isSubmitter = role === "SUBMITTER" || role === "ADMIN";
 
-  // All liabilities for this rep (excluding current), grouped by reason
+  // Count all liabilities for this rep grouped by reason (including current record)
   const allRepLiabilities = await prisma.liability.findMany({
-    where: { repId: liability.repId, id: { not: liability.id } },
-    orderBy: { callDate: "desc" },
-    select: { id: true, callDate: true, customerName: true, status: true, liabilityReason: true },
+    where: { repId: liability.repId },
+    select: { liabilityReason: true },
   });
-
-  // Group by reason, sorted by count desc
-  const byReason: Record<string, typeof allRepLiabilities> = {};
+  const countByReason: Record<string, number> = {};
   for (const l of allRepLiabilities) {
-    if (!byReason[l.liabilityReason]) byReason[l.liabilityReason] = [];
-    byReason[l.liabilityReason].push(l);
+    countByReason[l.liabilityReason] = (countByReason[l.liabilityReason] ?? 0) + 1;
   }
-  const sortedReasons = Object.entries(byReason).sort((a, b) => b[1].length - a[1].length);
-  const totalOther = allRepLiabilities.length;
 
   const commentColors: Record<string, string> = {
     MANAGER: "border-purple-200 bg-purple-50",
@@ -139,59 +140,28 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
         )}
       </div>
 
-      {/* Liability History Accordion */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      {/* Liability History Dropdown */}
+      <details className="group bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-gray-50 transition-colors list-none">
           <h2 className="font-semibold text-sm text-gray-800">
             Liability History — <span className="font-normal text-gray-500">{liability.rep.name ?? liability.rep.email}</span>
           </h2>
-          <span className="text-xs text-gray-500">
-            {totalOther > 0 ? `${totalOther} prior record${totalOther !== 1 ? "s" : ""}` : "No prior records"}
-          </span>
+          <svg className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <div className="border-t border-gray-100 divide-y divide-gray-100">
+          {ALL_LIABILITY_REASONS.map((reason) => {
+            const count = countByReason[reason] ?? 0;
+            return (
+              <div key={reason} className="flex items-center justify-between px-5 py-3 text-sm">
+                <span className="text-gray-700">{reason}</span>
+                <span className="text-gray-500 font-medium ml-4 shrink-0">{count}</span>
+              </div>
+            );
+          })}
         </div>
-
-        {sortedReasons.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-400">This is the first liability on record for this user.</p>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {sortedReasons.map(([reason, records]) => (
-              <details
-                key={reason}
-                className="group"
-                open={reason === liability.liabilityReason}
-              >
-                <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer select-none hover:bg-gray-50 transition-colors list-none">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* chevron */}
-                    <svg className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-sm text-gray-800 truncate">{reason}</span>
-                  </div>
-                  <span className="ml-4 shrink-0 text-xs text-gray-500">
-                    {records.length} {records.length === 1 ? "time" : "times"}
-                  </span>
-                </summary>
-                <div className="px-5 pb-3 space-y-1.5">
-                  {records.map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/dashboard/liabilities/${r.id}`}
-                      className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"
-                    >
-                      <span className="text-gray-700">
-                        <span className="font-medium">{format(new Date(r.callDate), "MMM d, yyyy")}</span>
-                        <span className="text-gray-400 ml-2 text-xs">Contact: {r.customerName}</span>
-                      </span>
-                      <Badge variant={statusVariantOf(r.status)}>{statusLabelOf(r.status)}</Badge>
-                    </Link>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
-        )}
-      </div>
+      </details>
 
       <AckTimeline
         submitterName={liability.submitter.name ?? liability.submitter.email}
