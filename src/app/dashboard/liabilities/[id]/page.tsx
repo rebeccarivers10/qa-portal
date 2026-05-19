@@ -145,9 +145,7 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
           <h2 className="font-semibold text-sm text-gray-800">
             Liability History — <span className="font-normal text-gray-500">{liability.rep.name ?? liability.rep.email}</span>
           </h2>
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-            totalOther > 0 ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-700"
-          }`}>
+          <span className="text-xs text-gray-500">
             {totalOther > 0 ? `${totalOther} prior record${totalOther !== 1 ? "s" : ""}` : "No prior records"}
           </span>
         </div>
@@ -170,11 +168,7 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
                     </svg>
                     <span className="text-sm text-gray-800 truncate">{reason}</span>
                   </div>
-                  <span className={`ml-4 shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
-                    records.length >= 3 ? "bg-red-100 text-red-700"
-                    : records.length === 2 ? "bg-amber-100 text-amber-800"
-                    : "bg-gray-100 text-gray-600"
-                  }`}>
+                  <span className="ml-4 shrink-0 text-xs text-gray-500">
                     {records.length} {records.length === 1 ? "time" : "times"}
                   </span>
                 </summary>
