@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { LiabilityActions } from "./LiabilityActions";
 import { AckTimeline } from "@/components/AckTimeline";
@@ -28,6 +29,19 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
   const isRep = session.user.id === liability.repId;
   const isManager = session.user.id === liability.rep.managerId;
   const isSubmitter = role === "SUBMITTER" || role === "ADMIN";
+
+  // 180-day recurring liabilities — same rep, same reason, last 180 days (excluding this record)
+  const since180 = subDays(new Date(), 180);
+  const recurring = await prisma.liability.findMany({
+    where: {
+      repId: liability.repId,
+      liabilityReason: liability.liabilityReason,
+      id: { not: liability.id },
+      callDate: { gte: since180 },
+    },
+    orderBy: { callDate: "desc" },
+    select: { id: true, callDate: true, customerName: true, status: true, createdAt: true },
+  });
 
   const commentColors: Record<string, string> = {
     MANAGER: "border-purple-200 bg-purple-50",
@@ -79,10 +93,12 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
             <p className="text-gray-500 font-medium">Call Date</p>
             <p className="text-gray-900 mt-0.5">{format(new Date(liability.callDate), "MMMM d, yyyy")}</p>
           </div>
-          <div>
-            <p className="text-gray-500 font-medium">Call Length</p>
-            <p className="text-gray-900 mt-0.5">{liability.callLength}</p>
-          </div>
+          {liability.callLength && (
+            <div>
+              <p className="text-gray-500 font-medium">Call Length</p>
+              <p className="text-gray-900 mt-0.5">{liability.callLength}</p>
+            </div>
+          )}
           <div>
             <p className="text-gray-500 font-medium">Liability Reason</p>
             <p className="text-gray-900 mt-0.5">{liability.liabilityReason}</p>
@@ -114,6 +130,68 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
           <p className="text-gray-500 font-medium text-sm">Notes</p>
           <p className="text-gray-900 mt-1 text-sm leading-relaxed whitespace-pre-wrap">{liability.notes}</p>
         </div>
+
+        {/* Screenshots / Proof */}
+        {liability.imageUrls.length > 0 && (
+          <div>
+            <p className="text-gray-500 font-medium text-sm mb-2">Screenshots / Proof</p>
+            <div className="flex flex-wrap gap-2">
+              {liability.imageUrls.map((src, i) => (
+                <a key={i} href={src} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={src}
+                    alt={`attachment ${i + 1}`}
+                    className="h-24 w-24 object-cover rounded border border-gray-200 hover:opacity-80 transition-opacity cursor-pointer"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 180-Day Recurring Liability Panel */}
+      <div className={`border rounded-lg p-5 ${recurring.length > 0 ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"}`}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm text-gray-800">
+            Recurring in Last 180 Days — <span className="font-normal text-gray-500">{liability.liabilityReason}</span>
+          </h2>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+            recurring.length > 0
+              ? "bg-amber-200 text-amber-800"
+              : "bg-green-100 text-green-700"
+          }`}>
+            {recurring.length > 0 ? `${recurring.length} prior occurrence${recurring.length > 1 ? "s" : ""}` : "First occurrence"}
+          </span>
+        </div>
+
+        {recurring.length === 0 ? (
+          <p className="text-sm text-gray-500">No other liabilities for this reason in the last 180 days.</p>
+        ) : (
+          <div className="space-y-2">
+            {recurring.map((r) => {
+              const rStatus = r.status === "NEEDS_REVIEW" ? "needs_review"
+                : r.status === "MANAGER_ACKNOWLEDGED" ? "mgr_acknowledged"
+                : "acknowledged";
+              const rLabel = r.status === "NEEDS_REVIEW" ? "Needs Review"
+                : r.status === "MANAGER_ACKNOWLEDGED" ? "Mgr Acknowledged"
+                : "Acknowledged";
+              return (
+                <Link
+                  key={r.id}
+                  href={`/dashboard/liabilities/${r.id}`}
+                  className="flex items-center justify-between bg-white border border-amber-200 rounded-md px-4 py-2.5 text-sm hover:bg-amber-50 transition-colors group"
+                >
+                  <span className="text-gray-700">
+                    <span className="font-medium">{format(new Date(r.callDate), "MMM d, yyyy")}</span>
+                    <span className="text-gray-400 ml-2">Contact: {r.customerName}</span>
+                  </span>
+                  <Badge variant={rStatus}>{rLabel}</Badge>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <AckTimeline

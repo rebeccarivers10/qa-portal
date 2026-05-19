@@ -90,7 +90,7 @@ model Liability {
   submitterId           String
   customerName          String
   callDate              DateTime
-  callLength            String
+  callLength            String?
   callLink              String?
   liabilityReason       String
   notes                 String
