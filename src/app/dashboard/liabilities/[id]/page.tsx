@@ -1,13 +1,20 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { LiabilityActions } from "./LiabilityActions";
 import { AckTimeline } from "@/components/AckTimeline";
 
 const REGION_LABELS: Record<string, string> = { EAST: "East", WEST: "West", CENTRAL: "Central" };
+
+function statusVariantOf(s: string) {
+  return s === "NEEDS_REVIEW" ? "needs_review" : s === "MANAGER_ACKNOWLEDGED" ? "mgr_acknowledged" : "acknowledged";
+}
+function statusLabelOf(s: string) {
+  return s === "NEEDS_REVIEW" ? "Needs Review" : s === "MANAGER_ACKNOWLEDGED" ? "Mgr Acknowledged" : "Acknowledged";
+}
 
 export default async function LiabilityPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -30,18 +37,21 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
   const isManager = session.user.id === liability.rep.managerId;
   const isSubmitter = role === "SUBMITTER" || role === "ADMIN";
 
-  // 180-day recurring liabilities — same rep, same reason, last 180 days (excluding this record)
-  const since180 = subDays(new Date(), 180);
-  const recurring = await prisma.liability.findMany({
-    where: {
-      repId: liability.repId,
-      liabilityReason: liability.liabilityReason,
-      id: { not: liability.id },
-      callDate: { gte: since180 },
-    },
+  // All liabilities for this rep (excluding current), grouped by reason
+  const allRepLiabilities = await prisma.liability.findMany({
+    where: { repId: liability.repId, id: { not: liability.id } },
     orderBy: { callDate: "desc" },
-    select: { id: true, callDate: true, customerName: true, status: true, createdAt: true },
+    select: { id: true, callDate: true, customerName: true, status: true, liabilityReason: true },
   });
+
+  // Group by reason, sorted by count desc
+  const byReason: Record<string, typeof allRepLiabilities> = {};
+  for (const l of allRepLiabilities) {
+    if (!byReason[l.liabilityReason]) byReason[l.liabilityReason] = [];
+    byReason[l.liabilityReason].push(l);
+  }
+  const sortedReasons = Object.entries(byReason).sort((a, b) => b[1].length - a[1].length);
+  const totalOther = allRepLiabilities.length;
 
   const commentColors: Record<string, string> = {
     MANAGER: "border-purple-200 bg-purple-50",
@@ -52,13 +62,6 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
     SUBMITTER: "Submitter Note",
   };
 
-  const statusVariant = liability.status === "NEEDS_REVIEW" ? "needs_review"
-    : liability.status === "MANAGER_ACKNOWLEDGED" ? "mgr_acknowledged"
-    : "acknowledged";
-  const statusLabel = liability.status === "NEEDS_REVIEW" ? "Needs Review"
-    : liability.status === "MANAGER_ACKNOWLEDGED" ? "Mgr Acknowledged"
-    : "Acknowledged";
-
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between">
@@ -68,9 +71,10 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
             Submitted {format(new Date(liability.createdAt), "MMMM d, yyyy")} by {liability.submitter.name ?? liability.submitter.email}
           </p>
         </div>
-        <Badge variant={statusVariant}>{statusLabel}</Badge>
+        <Badge variant={statusVariantOf(liability.status)}>{statusLabelOf(liability.status)}</Badge>
       </div>
 
+      {/* Main info card */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -93,12 +97,6 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
             <p className="text-gray-500 font-medium">Call Date</p>
             <p className="text-gray-900 mt-0.5">{format(new Date(liability.callDate), "MMMM d, yyyy")}</p>
           </div>
-          {liability.callLength && (
-            <div>
-              <p className="text-gray-500 font-medium">Call Length</p>
-              <p className="text-gray-900 mt-0.5">{liability.callLength}</p>
-            </div>
-          )}
           <div>
             <p className="text-gray-500 font-medium">Liability Reason</p>
             <p className="text-gray-900 mt-0.5">{liability.liabilityReason}</p>
@@ -150,46 +148,62 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
         )}
       </div>
 
-      {/* 180-Day Recurring Liability Panel */}
-      <div className={`border rounded-lg p-5 ${recurring.length > 0 ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"}`}>
-        <div className="flex items-center justify-between mb-3">
+      {/* Liability History Accordion */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-sm text-gray-800">
-            Recurring in Last 180 Days — <span className="font-normal text-gray-500">{liability.liabilityReason}</span>
+            Liability History — <span className="font-normal text-gray-500">{liability.rep.name ?? liability.rep.email}</span>
           </h2>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-            recurring.length > 0
-              ? "bg-amber-200 text-amber-800"
-              : "bg-green-100 text-green-700"
+            totalOther > 0 ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-700"
           }`}>
-            {recurring.length > 0 ? `${recurring.length} prior occurrence${recurring.length > 1 ? "s" : ""}` : "First occurrence"}
+            {totalOther > 0 ? `${totalOther} prior record${totalOther !== 1 ? "s" : ""}` : "No prior records"}
           </span>
         </div>
 
-        {recurring.length === 0 ? (
-          <p className="text-sm text-gray-500">No other liabilities for this reason in the last 180 days.</p>
+        {sortedReasons.length === 0 ? (
+          <p className="px-5 py-4 text-sm text-gray-400">This is the first liability on record for this user.</p>
         ) : (
-          <div className="space-y-2">
-            {recurring.map((r) => {
-              const rStatus = r.status === "NEEDS_REVIEW" ? "needs_review"
-                : r.status === "MANAGER_ACKNOWLEDGED" ? "mgr_acknowledged"
-                : "acknowledged";
-              const rLabel = r.status === "NEEDS_REVIEW" ? "Needs Review"
-                : r.status === "MANAGER_ACKNOWLEDGED" ? "Mgr Acknowledged"
-                : "Acknowledged";
-              return (
-                <Link
-                  key={r.id}
-                  href={`/dashboard/liabilities/${r.id}`}
-                  className="flex items-center justify-between bg-white border border-amber-200 rounded-md px-4 py-2.5 text-sm hover:bg-amber-50 transition-colors group"
-                >
-                  <span className="text-gray-700">
-                    <span className="font-medium">{format(new Date(r.callDate), "MMM d, yyyy")}</span>
-                    <span className="text-gray-400 ml-2">Contact: {r.customerName}</span>
+          <div className="divide-y divide-gray-100">
+            {sortedReasons.map(([reason, records]) => (
+              <details
+                key={reason}
+                className="group"
+                open={reason === liability.liabilityReason}
+              >
+                <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer select-none hover:bg-gray-50 transition-colors list-none">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* chevron */}
+                    <svg className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span className="text-sm text-gray-800 truncate">{reason}</span>
+                  </div>
+                  <span className={`ml-4 shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                    records.length >= 3 ? "bg-red-100 text-red-700"
+                    : records.length === 2 ? "bg-amber-100 text-amber-800"
+                    : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {records.length} {records.length === 1 ? "time" : "times"}
                   </span>
-                  <Badge variant={rStatus}>{rLabel}</Badge>
-                </Link>
-              );
-            })}
+                </summary>
+                <div className="px-5 pb-3 space-y-1.5">
+                  {records.map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/dashboard/liabilities/${r.id}`}
+                      className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                    >
+                      <span className="text-gray-700">
+                        <span className="font-medium">{format(new Date(r.callDate), "MMM d, yyyy")}</span>
+                        <span className="text-gray-400 ml-2 text-xs">Contact: {r.customerName}</span>
+                      </span>
+                      <Badge variant={statusVariantOf(r.status)}>{statusLabelOf(r.status)}</Badge>
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ))}
           </div>
         )}
       </div>

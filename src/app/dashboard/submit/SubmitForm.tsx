@@ -38,7 +38,6 @@ export function SubmitForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [contactName, setContactName] = useState("");
   const [callDate, setCallDate] = useState("");
-  const [callLength, setCallLength] = useState("");
   const [callLink, setCallLink] = useState("");
   const [liabilityReason, setLiabilityReason] = useState("");
   const [notes, setNotes] = useState("");
@@ -92,7 +91,6 @@ export function SubmitForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         repId, customerName: contactName, callDate,
-        callLength: callLength || null,
         callLink: callLink || null,
         liabilityReason, notes, region, imageUrls: images,
       }),
@@ -148,21 +146,11 @@ export function SubmitForm() {
           className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" required />
       </div>
 
-      {/* Call Date + Length */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-gray-700">Call Date *</label>
-          <input type="date" value={callDate} onChange={(e) => setCallDate(e.target.value)}
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" required />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-gray-700">
-            Call Length <span className="text-gray-400 font-normal normal-case text-xs">(optional)</span>
-          </label>
-          <input type="text" value={callLength} onChange={(e) => setCallLength(e.target.value)}
-            placeholder="e.g. 14 min"
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" />
-        </div>
+      {/* Call Date */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-semibold text-gray-700">Call Date *</label>
+        <input type="date" value={callDate} onChange={(e) => setCallDate(e.target.value)}
+          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" required />
       </div>
 
       {/* Link to Call */}
