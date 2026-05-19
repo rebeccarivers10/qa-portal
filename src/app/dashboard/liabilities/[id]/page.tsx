@@ -6,13 +6,6 @@ import { Badge } from "@/components/ui/Badge";
 import { LiabilityActions } from "./LiabilityActions";
 import { AckTimeline } from "@/components/AckTimeline";
 
-const ALL_LIABILITY_REASONS = [
-  "Sales- Third-Party Consent for Call Recordings Policy",
-  "User Locations",
-  "Other - See Notes",
-  "Ongoing Support",
-  "AM- Impatience with the Client (Extreme)",
-];
 
 const REGION_LABELS: Record<string, string> = { EAST: "East", WEST: "West", CENTRAL: "Central" };
 
@@ -44,15 +37,6 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
   const isManager = session.user.id === liability.rep.managerId;
   const isSubmitter = role === "SUBMITTER" || role === "ADMIN";
 
-  // Count all liabilities for this rep grouped by reason (including current record)
-  const allRepLiabilities = await prisma.liability.findMany({
-    where: { repId: liability.repId },
-    select: { liabilityReason: true },
-  });
-  const countByReason: Record<string, number> = {};
-  for (const l of allRepLiabilities) {
-    countByReason[l.liabilityReason] = (countByReason[l.liabilityReason] ?? 0) + 1;
-  }
 
   const commentColors: Record<string, string> = {
     MANAGER: "border-purple-200 bg-purple-50",
@@ -139,29 +123,6 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
           </div>
         )}
       </div>
-
-      {/* Liability History Dropdown */}
-      <details className="group bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-gray-50 transition-colors list-none">
-          <h2 className="font-semibold text-sm text-gray-800">
-            Liability History — <span className="font-normal text-gray-500">{liability.rep.name ?? liability.rep.email}</span>
-          </h2>
-          <svg className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </summary>
-        <div className="border-t border-gray-100 divide-y divide-gray-100">
-          {ALL_LIABILITY_REASONS.map((reason) => {
-            const count = countByReason[reason] ?? 0;
-            return (
-              <div key={reason} className="flex items-center justify-between px-5 py-3 text-sm">
-                <span className="text-gray-700">{reason}</span>
-                <span className="text-gray-500 font-medium ml-4 shrink-0">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </details>
 
       <AckTimeline
         submitterName={liability.submitter.name ?? liability.submitter.email}
