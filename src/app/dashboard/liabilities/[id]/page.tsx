@@ -101,15 +101,6 @@ export default async function LiabilityPage({ params }: { params: Promise<{ id: 
             <p className="text-gray-500 font-medium">Liability Reason</p>
             <p className="text-gray-900 mt-0.5">{liability.liabilityReason}</p>
           </div>
-          {liability.callLink && (
-            <div>
-              <p className="text-gray-500 font-medium">Link to Call</p>
-              <a href={liability.callLink} target="_blank" rel="noopener noreferrer"
-                className="text-blue-600 hover:underline mt-0.5 block truncate">
-                Open in ZRA
-              </a>
-            </div>
-          )}
           {liability.acknowledgedAt && (
             <div>
               <p className="text-gray-500 font-medium">User Acknowledged</p>

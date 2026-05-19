@@ -38,7 +38,7 @@ export function SubmitForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [contactName, setContactName] = useState("");
   const [callDate, setCallDate] = useState("");
-  const [callLink, setCallLink] = useState("");
+
   const [liabilityReason, setLiabilityReason] = useState("");
   const [notes, setNotes] = useState("");
   const [region, setRegion] = useState("");
@@ -91,7 +91,6 @@ export function SubmitForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         repId, customerName: contactName, callDate,
-        callLink: callLink || null,
         liabilityReason, notes, region, imageUrls: images,
       }),
     });
@@ -151,16 +150,6 @@ export function SubmitForm() {
         <label className="text-sm font-semibold text-gray-700">Call Date *</label>
         <input type="date" value={callDate} onChange={(e) => setCallDate(e.target.value)}
           className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" required />
-      </div>
-
-      {/* Link to Call */}
-      <div className="space-y-1.5">
-        <label className="text-sm font-semibold text-gray-700">
-          Link to Call (ZRA) <span className="text-gray-400 font-normal normal-case text-xs">(optional)</span>
-        </label>
-        <input type="url" value={callLink} onChange={(e) => setCallLink(e.target.value)}
-          placeholder="https://…"
-          className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2" />
       </div>
 
       {/* Liability Reason */}
