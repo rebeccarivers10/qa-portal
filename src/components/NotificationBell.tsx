@@ -9,7 +9,8 @@ interface Notification {
   id: string;
   message: string;
   read: boolean;
-  liabilityId: string;
+  liabilityId: string | null;
+  qaReviewId: string | null;
   createdAt: string;
 }
 
@@ -69,7 +70,7 @@ export function NotificationBell() {
             notifications.map((n) => (
               <Link
                 key={n.id}
-                href={`/dashboard/liabilities/${n.liabilityId}`}
+                href={n.qaReviewId ? `/dashboard/qa-reviews/${n.qaReviewId}` : `/dashboard/liabilities/${n.liabilityId}`}
                 onClick={() => setOpen(false)}
                 className={`block px-4 py-3 text-sm border-b border-gray-50 hover:bg-gray-50 transition-colors ${
                   !n.read ? "bg-blue-50" : ""

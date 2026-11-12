@@ -25,6 +25,19 @@ enum Region {
   CENTRAL
 }
 
+enum FeedbackType {
+  NO_QA_LIABILITIES
+  COACHING_OPPORTUNITY
+  LIABILITY
+}
+
+enum RecordingSource {
+  ZRA
+  ZOOM
+  HUBSPOT
+  UPLOAD
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -44,6 +57,9 @@ model User {
   submitted     Liability[]        @relation("SubmitterLiabilities")
   comments      LiabilityComment[]
   notifications Notification[]
+
+  repReviews       QAReview[] @relation("RepQAReviews")
+  submittedReviews QAReview[] @relation("SubmitterQAReviews")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -132,12 +148,85 @@ model LiabilityComment {
 model Notification {
   id          String  @id @default(cuid())
   userId      String
-  liabilityId String
+  liabilityId String?
+  qaReviewId  String?
   message     String
   read        Boolean @default(false)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  liability Liability @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+  liability Liability? @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+  qaReview  QAReview?  @relation(fields: [qaReviewId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+}
+
+// ── Lookup tables ────────────────────────────────────────────────────────────
+
+model CallType {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  active    Boolean    @default(true)
+  reviews   QAReview[]
+  createdAt DateTime   @default(now())
+}
+
+model Playlist {
+  id        String             @id @default(cuid())
+  name      String             @unique
+  active    Boolean            @default(true)
+  reviews   QAReviewPlaylist[]
+  createdAt DateTime           @default(now())
+}
+
+model Product {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  active    Boolean           @default(true)
+  reviews   QAReviewProduct[]
+  createdAt DateTime          @default(now())
+}
+
+// ── QA Review ────────────────────────────────────────────────────────────────
+
+model QAReview {
+  id              String          @id @default(cuid())
+  repId           String
+  submitterId     String
+  callDate        DateTime
+  callTypeId      String
+  recordingUrl    String?
+  recordingSource RecordingSource?
+  feedbackTypes   FeedbackType[]
+  liabilityReason String?
+  region          Region?
+  notes           String
+  imageUrls       String[]        @default([])
+
+  rep         User              @relation("RepQAReviews", fields: [repId], references: [id])
+  submitter   User              @relation("SubmitterQAReviews", fields: [submitterId], references: [id])
+  callType    CallType          @relation(fields: [callTypeId], references: [id])
+  playlists   QAReviewPlaylist[]
+  products    QAReviewProduct[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QAReviewPlaylist {
+  reviewId   String
+  playlistId String
+  review     QAReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+
+  @@id([reviewId, playlistId])
+}
+
+model QAReviewProduct {
+  reviewId  String
+  productId String
+  review    QAReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@id([reviewId, productId])
 }

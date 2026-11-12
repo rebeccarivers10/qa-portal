@@ -25,6 +25,9 @@ export async function Navbar() {
           <Link href="/dashboard" className="text-blue-200 hover:text-white transition-colors font-medium">
             Dashboard
           </Link>
+          <Link href="/dashboard/qa-reviews" className="text-blue-200 hover:text-white transition-colors font-medium">
+            QA Reviews
+          </Link>
           {(role === "SUBMITTER" || role === "ADMIN") && (
             <Link href="/dashboard/submit" className="text-blue-200 hover:text-white transition-colors font-medium">
               Submit Liability

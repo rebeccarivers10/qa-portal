@@ -9,7 +9,7 @@ function getResend() {
 
 async function sendEmail(to: string, subject: string, html: string) {
   const resend = getResend();
-  if (!resend) return; // no key configured — skip silently
+  if (!resend) return;
   try {
     await resend.emails.send({
       from: "QA Portal <noreply@logicalposition.com>",
@@ -22,17 +22,22 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
+// ── Shared helper ─────────────────────────────────────────────────────────────
+
 interface NotifyOptions {
   userIds: string[];
-  liabilityId: string;
+  liabilityId?: string;
+  qaReviewId?: string;
   message: string;
 }
 
-export async function createNotifications({ userIds, liabilityId, message }: NotifyOptions) {
+export async function createNotifications({ userIds, liabilityId, qaReviewId, message }: NotifyOptions) {
   await prisma.notification.createMany({
-    data: userIds.map((userId) => ({ userId, liabilityId, message })),
+    data: userIds.map((userId) => ({ userId, liabilityId, qaReviewId, message })),
   });
 }
+
+// ── Liability notifications ───────────────────────────────────────────────────
 
 export async function notifyLiabilitySubmitted(liabilityId: string) {
   const liability = await prisma.liability.findUnique({
@@ -52,7 +57,6 @@ export async function notifyLiabilitySubmitted(liabilityId: string) {
 
   const liabilityUrl = `${process.env.NEXTAUTH_URL}/dashboard/liabilities/${liabilityId}`;
 
-  // Email the rep
   await sendEmail(
     liability.rep.email,
     "New QA Liability Submitted",
@@ -63,7 +67,6 @@ export async function notifyLiabilitySubmitted(liabilityId: string) {
      <p style="color:#888;font-size:12px;">QA Portal — Logical Position</p>`
   );
 
-  // Email the manager
   if (liability.rep.manager) {
     const managerName = liability.rep.manager.name ?? liability.rep.manager.email;
     await sendEmail(
@@ -125,4 +128,49 @@ export async function notifyCommentAdded(liabilityId: string, commenterName: str
      <p><a href="${liabilityUrl}">View this liability →</a></p>
      <p style="color:#888;font-size:12px;">QA Portal — Logical Position</p>`
   );
+}
+
+// ── QA Review notifications ───────────────────────────────────────────────────
+
+export async function notifyQAReviewSubmitted(qaReviewId: string) {
+  const review = await prisma.qAReview.findUnique({
+    where: { id: qaReviewId },
+    include: { rep: { include: { manager: true } }, submitter: true },
+  });
+  if (!review) return;
+
+  const repName = review.rep.name ?? review.rep.email;
+  const submitterName = review.submitter.name ?? review.submitter.email;
+  const feedbackLabel = review.feedbackTypes.join(", ").replace(/_/g, " ").toLowerCase();
+  const message = `A new QA review has been submitted for ${repName} (${feedbackLabel}).`;
+
+  const userIds = [review.repId];
+  if (review.rep.managerId) userIds.push(review.rep.managerId);
+
+  await createNotifications({ userIds, qaReviewId, message });
+
+  const reviewUrl = `${process.env.NEXTAUTH_URL}/dashboard/qa-reviews/${qaReviewId}`;
+
+  await sendEmail(
+    review.rep.email,
+    "New QA Review Submitted",
+    `<p>Hi ${repName},</p>
+     <p>A new QA review has been submitted for you by ${submitterName}.</p>
+     <p><strong>Feedback:</strong> ${feedbackLabel}</p>
+     <p><a href="${reviewUrl}">View this review →</a></p>
+     <p style="color:#888;font-size:12px;">QA Portal — Logical Position</p>`
+  );
+
+  if (review.rep.manager) {
+    const managerName = review.rep.manager.name ?? review.rep.manager.email;
+    await sendEmail(
+      review.rep.manager.email,
+      `New QA Review for ${repName}`,
+      `<p>Hi ${managerName},</p>
+       <p>A new QA review has been submitted for your rep ${repName} by ${submitterName}.</p>
+       <p><strong>Feedback:</strong> ${feedbackLabel}</p>
+       <p><a href="${reviewUrl}">View this review →</a></p>
+       <p style="color:#888;font-size:12px;">QA Portal — Logical Position</p>`
+    );
+  }
 }
