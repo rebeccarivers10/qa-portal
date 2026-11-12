@@ -39,10 +39,10 @@ export const QA_API_BASE_URL =
  * Keep it outside the integrations folder if you want it to persist across
  * deployments; for a Vercel cron, store in a database or KV store instead.
  */
-export const STATE_FILE_PATH = new URL(
-  "../../.zra-sync-state.json",
-  import.meta.url
-).pathname;
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+const _configDir = dirname(fileURLToPath(import.meta.url));
+export const STATE_FILE_PATH = resolve(_configDir, "../../.zra-sync-state.json");
 
 /** How many days back the exploration script fetches when no --from is given. */
 export const EXPLORE_DEFAULT_LOOKBACK_DAYS = 14;
