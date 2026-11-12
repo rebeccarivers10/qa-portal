@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
   const feedbackType = searchParams.get("feedbackType");
   const playlistId = searchParams.get("playlistId");
   const productId = searchParams.get("productId");
+  const sourceSystem = searchParams.get("sourceSystem");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
   if (feedbackType) where.feedbackTypes = { has: feedbackType };
   if (playlistId) where.playlists = { some: { playlistId } };
   if (productId) where.products = { some: { productId } };
+  if (sourceSystem) where.sourceSystem = sourceSystem;
   if (from || to) {
     where.callDate = {
       ...(from ? { gte: new Date(from) } : {}),
@@ -97,6 +99,8 @@ export async function POST(req: NextRequest) {
     callTypeId,
     recordingUrl,
     recordingSource,
+    sourceCallId,
+    sourceSystem,
     feedbackTypes,
     liabilityReason,
     region,
@@ -136,6 +140,8 @@ export async function POST(req: NextRequest) {
       callTypeId,
       recordingUrl: recordingUrl || null,
       recordingSource: recordingSource || null,
+      sourceCallId: sourceCallId || null,
+      sourceSystem: sourceSystem || null,
       feedbackTypes,
       liabilityReason: liabilityReason || null,
       region: region || null,

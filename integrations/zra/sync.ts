@@ -9,7 +9,7 @@
  *   1. Reads the last successful run timestamp from state.
  *   2. Fetches conversations from ZRA since that timestamp.
  *   3. Filters to those where a watched indicator fired.
- *   4. Skips any whose ZRA conversation ID already exists in the QA Reviews API.
+ *   4. Skips any whose sourceCallId already exists in the QA Reviews API.
  *   5. Maps each to a QA Review payload and POSTs it.
  *   6. Logs the run summary and updates state on success.
  *
@@ -45,11 +45,12 @@ interface QAReviewPayload {
   callTypeId: string | null;
   recordingUrl: string | null;
   recordingSource: "ZRA";
+  sourceCallId: string;
+  sourceSystem: "ZRA";
   feedbackTypes: ["LIABILITY"];
   liabilityReason: string;
   region: null;
   notes: string;
-  externalId: string; // ZRA conversation ID stored in notes for dedup
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ function buildNotes(
     .join(", ");
 
   return (
-    `Auto-imported from ZRA. Conversation ID: ${conv.id}\n` +
+    `Auto-imported from ZRA.\n` +
     `Topic: ${conv.topic}\n` +
     `Indicators fired: ${firedIndicators}`
   );
@@ -80,19 +81,19 @@ function buildNotes(
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-async function fetchExistingExternalIds(apiKey: string): Promise<Set<string>> {
-  const res = await fetch(`${QA_API_BASE_URL}/api/qa-reviews`, {
-    headers: { "x-api-key": apiKey },
-  });
+async function fetchExistingSourceCallIds(apiKey: string): Promise<Set<string>> {
+  const res = await fetch(
+    `${QA_API_BASE_URL}/api/qa-reviews?sourceSystem=ZRA`,
+    { headers: { "x-api-key": apiKey } }
+  );
   if (!res.ok) {
     throw new Error(`Failed to fetch existing reviews: ${res.status}`);
   }
 
-  const reviews = (await res.json()) as Array<{ notes?: string }>;
+  const reviews = (await res.json()) as Array<{ sourceCallId?: string | null }>;
   const ids = new Set<string>();
   for (const r of reviews) {
-    const match = r.notes?.match(/Conversation ID: (\S+)/);
-    if (match) ids.add(match[1]);
+    if (r.sourceCallId) ids.add(r.sourceCallId);
   }
   return ids;
 }
@@ -123,7 +124,7 @@ async function fetchRepIdByEmail(
 }
 
 async function postReview(
-  payload: Omit<QAReviewPayload, "externalId"> & { notes: string },
+  payload: QAReviewPayload,
   apiKey: string,
   submitterId: string
 ): Promise<void> {
@@ -172,11 +173,11 @@ export async function runSync(options: { dryRun?: boolean } = {}): Promise<SyncR
     `[zra-sync] ${dryRun ? "DRY RUN — " : ""}Fetching conversations from ${from.toISOString()} to ${to.toISOString()}`
   );
 
-  // Load existing conversation IDs to skip duplicates
+  // Load existing sourceCallIds to skip duplicates
   let existingIds: Set<string>;
   try {
-    existingIds = dryRun ? new Set() : await fetchExistingExternalIds(apiKey);
-    console.log(`[zra-sync] ${existingIds.size} existing conversation IDs loaded.`);
+    existingIds = dryRun ? new Set() : await fetchExistingSourceCallIds(apiKey);
+    console.log(`[zra-sync] ${existingIds.size} existing sourceCallIds loaded.`);
   } catch (err) {
     throw new Error(`Could not fetch existing reviews: ${(err as Error).message}`);
   }
@@ -265,6 +266,8 @@ export async function runSync(options: { dryRun?: boolean } = {}): Promise<SyncR
           callTypeId,
           recordingUrl: conv.recordingUrl,
           recordingSource: "ZRA",
+          sourceCallId: conv.id,
+          sourceSystem: "ZRA",
           feedbackTypes: ["LIABILITY"],
           liabilityReason,
           region: null,

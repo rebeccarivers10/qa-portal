@@ -196,6 +196,8 @@ model QAReview {
   callTypeId      String
   recordingUrl    String?
   recordingSource RecordingSource?
+  sourceCallId    String?          // external call ID (e.g. ZRA conversation ID)
+  sourceSystem    String?          // which system the call came from (e.g. "ZRA")
   feedbackTypes   FeedbackType[]
   liabilityReason String?
   region          Region?
