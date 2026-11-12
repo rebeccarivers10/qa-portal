@@ -40,4 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# ZRA integration
+.zra-sync-state.json
+integrations/zra/indicators.json
+integrations/zra/conversations.csv
+
 /src/generated/prisma

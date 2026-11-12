@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/zra-sync",
+      "schedule": "0 6 * * *",
+      "_comment": "Runs at 06:00 UTC daily. DISABLED by default — set ZRA_CRON_ENABLED=true in Vercel env vars to activate."
+    }
+  ]
+}
